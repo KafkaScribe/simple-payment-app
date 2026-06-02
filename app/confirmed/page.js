@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || '@Payment';
+const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || 'cute_girl';
 
 function ConfirmedContent() {
   const router = useRouter();

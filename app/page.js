@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const QUICK_AMOUNTS = [10, 15, 20, 25];
 const MORE_AMOUNTS = [50, 75, 100, 150, 200];
-const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || '@Payment';
+const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || 'cute_girl';
 const MIN_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MIN_AMOUNT || '10');
 const MAX_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MAX_AMOUNT || '2000');
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 
-const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || '@Payment';
+const CASHTAG = process.env.NEXT_PUBLIC_CASHTAG || 'cute_girl';
 
 function PayPageContent() {
   const router = useRouter();
