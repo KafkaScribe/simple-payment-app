@@ -93,7 +93,7 @@ function PayPageContent() {
     }
   };
 
-  const bitcoinUri = `bitcoin:${btcAddress}`;
+  const bitcoinUri = btcAddress;
 
   if (!amount) return null;
 
