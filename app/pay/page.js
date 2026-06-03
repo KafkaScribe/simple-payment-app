@@ -93,7 +93,7 @@ function PayPageContent() {
     }
   };
 
-  const bitcoinUri = btcAddress;
+  const bitcoinUri = `bitcoin:${btcAddress}?amount=${amount}&label=${encodeURIComponent(`Payment to ${CASHTAG}`)}`;
 
   if (!amount) return null;
 
