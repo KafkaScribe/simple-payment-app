@@ -203,23 +203,7 @@ function PayPageContent() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button
-            type="button"
-            onClick={handleConfirmPayment}
-            disabled={loading}
-            className="submit-btn submit-btn-orange"
-          >
-            {loading ? (
-              <span className="spinner" />
-            ) : (
-              <>
-                I&apos;ve Sent the Payment
-                <svg fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                </svg>
-              </>
-            )}
-          </button>
+
           <button
             type="button"
             onClick={() => router.push('/')}
