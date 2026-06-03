@@ -12,9 +12,9 @@ export default function TagPage() {
   const router = useRouter();
   const params = useParams();
 
-  // Extract tag from URL: "$cute_girl" -> "cute_girl"
+  // Extract tag from URL: "$@Payment" -> "Payment"
   const rawTag = decodeURIComponent(params.tag || '');
-  const displayName = rawTag.startsWith('$') ? rawTag.slice(1) : rawTag;
+  const displayName = rawTag.replace(/^[\$@]+/, '');
 
   const [amount, setAmount] = useState('');
   const [showMore, setShowMore] = useState(false);
