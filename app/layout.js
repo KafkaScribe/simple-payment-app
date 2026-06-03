@@ -1,12 +1,12 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "CashPay — Bitcoin Payment",
-  description: "Send Bitcoin payments instantly and securely. Simple, fast, and reliable cryptocurrency payment gateway.",
-  keywords: "bitcoin, payment, cryptocurrency, BTC, send money, QR code",
+  title: "CashPay",
+  description: "Send payments instantly and securely. Simple, fast, and reliable payment gateway.",
+  keywords: "payment, send money, QR code",
   openGraph: {
-    title: "CashPay — Bitcoin Payment",
-    description: "Send Bitcoin payments instantly and securely.",
+    title: "CashPay",
+    description: "Send payments instantly and securely.",
     type: "website",
   },
 };
