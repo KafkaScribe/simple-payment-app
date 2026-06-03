@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Download Payment Card</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,38 +15,39 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #0a0a0a;
+      background: #111;
       padding: 20px;
-      gap: 24px;
+      gap: 28px;
     }
+    canvas { border-radius: 8px; }
     .download-btn {
-      padding: 14px 36px;
+      padding: 16px 44px;
       background: linear-gradient(135deg, #F7931A, #E8850F);
       color: white;
       border: none;
-      border-radius: 12px;
-      font-size: 16px;
+      border-radius: 14px;
+      font-size: 17px;
       font-weight: 700;
       cursor: pointer;
       font-family: 'Inter', sans-serif;
       transition: all 0.3s;
-      box-shadow: 0 4px 20px rgba(247, 147, 26, 0.3);
+      box-shadow: 0 4px 24px rgba(247, 147, 26, 0.3);
     }
     .download-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(247, 147, 26, 0.45);
+      box-shadow: 0 8px 30px rgba(247, 147, 26, 0.5);
     }
-    canvas { border-radius: 24px; }
-    .hint { color: rgba(255,255,255,0.4); font-size: 13px; }
+    .hint { color: rgba(255,255,255,0.35); font-size: 13px; }
   </style>
 </head>
 <body>
-  <canvas id="card" width="800" height="1100"></canvas>
-  <button class="download-btn" onclick="downloadCard()">⬇ Download PNG</button>
+  <canvas id="card" width="900" height="1100"></canvas>
+  <button class="download-btn" onclick="downloadCard()">⬇  Download PNG</button>
   <p class="hint">Right-click the image to save, or tap the button above.</p>
 
   <script>
     const PAYMENT_URL = 'https://www.cash2pay.shop/$Payment';
+    const DISPLAY_URL = 'https://cash2pay.shop/$Payment';
 
     async function drawCard() {
       const canvas = document.getElementById('card');
@@ -54,225 +55,121 @@
       const W = canvas.width;
       const H = canvas.height;
 
-      // Background
-      ctx.fillStyle = '#0a0a0a';
+      // Pure black background
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, W, H);
 
-      // Card background
-      const cardX = 40, cardY = 40, cardW = W - 80, cardH = H - 80;
-      const r = 32;
-      ctx.beginPath();
-      ctx.moveTo(cardX + r, cardY);
-      ctx.lineTo(cardX + cardW - r, cardY);
-      ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + r);
-      ctx.lineTo(cardX + cardW, cardY + cardH - r);
-      ctx.quadraticCurveTo(cardX + cardW, cardY + cardH, cardX + cardW - r, cardY + cardH);
-      ctx.lineTo(cardX + r, cardY + cardH);
-      ctx.quadraticCurveTo(cardX, cardY + cardH, cardX, cardY + cardH - r);
-      ctx.lineTo(cardX, cardY + r);
-      ctx.quadraticCurveTo(cardX, cardY, cardX + r, cardY);
-      ctx.closePath();
-
-      // Card fill
-      const grad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-      grad.addColorStop(0, '#1c1c35');
-      grad.addColorStop(0.5, '#171730');
-      grad.addColorStop(1, '#1c1c35');
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Card border glow
-      ctx.strokeStyle = 'rgba(247, 147, 26, 0.15)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Top orange line
-      ctx.fillStyle = '#F7931A';
-      roundRect(ctx, cardX + 1, cardY + 1, cardW - 2, 4, { tl: r, tr: r, bl: 0, br: 0 });
-
-      // Bitcoin icon circle
-      const iconX = W / 2, iconY = 150;
-      const iconR = 38;
-
-      // Glow
-      const glowGrad = ctx.createRadialGradient(iconX, iconY, iconR, iconX, iconY, iconR + 20);
-      glowGrad.addColorStop(0, 'rgba(247, 147, 26, 0.3)');
-      glowGrad.addColorStop(1, 'rgba(247, 147, 26, 0)');
-      ctx.fillStyle = glowGrad;
-      ctx.beginPath();
-      ctx.arc(iconX, iconY, iconR + 20, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Circle
-      const circGrad = ctx.createLinearGradient(iconX - iconR, iconY - iconR, iconX + iconR, iconY + iconR);
-      circGrad.addColorStop(0, '#F7931A');
-      circGrad.addColorStop(1, '#E8850F');
-      ctx.fillStyle = circGrad;
-      ctx.beginPath();
-      ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ₿ symbol
+      // "Cash Pay" title
       ctx.fillStyle = '#ffffff';
-      ctx.font = '800 36px Inter, sans-serif';
+      ctx.font = '800 48px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('₿', iconX, iconY + 2);
+      ctx.fillText('Cash Pay', W / 2, 100);
 
-      // "Payment" text
+      // URL below title
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.font = '400 22px Inter, sans-serif';
+      ctx.fillText(DISPLAY_URL, W / 2, 160);
+
+      // QR code white background (rounded rect)
+      const qrBgSize = 620;
+      const qrBgX = (W - qrBgSize) / 2;
+      const qrBgY = 220;
+      const qrBgR = 32;
+
       ctx.fillStyle = '#ffffff';
-      ctx.font = '700 30px Inter, sans-serif';
-      ctx.fillText('Payment', W / 2, 220);
+      ctx.beginPath();
+      ctx.moveTo(qrBgX + qrBgR, qrBgY);
+      ctx.lineTo(qrBgX + qrBgSize - qrBgR, qrBgY);
+      ctx.quadraticCurveTo(qrBgX + qrBgSize, qrBgY, qrBgX + qrBgSize, qrBgY + qrBgR);
+      ctx.lineTo(qrBgX + qrBgSize, qrBgY + qrBgSize - qrBgR);
+      ctx.quadraticCurveTo(qrBgX + qrBgSize, qrBgY + qrBgSize, qrBgX + qrBgSize - qrBgR, qrBgY + qrBgSize);
+      ctx.lineTo(qrBgX + qrBgR, qrBgY + qrBgSize);
+      ctx.quadraticCurveTo(qrBgX, qrBgY + qrBgSize, qrBgX, qrBgY + qrBgSize - qrBgR);
+      ctx.lineTo(qrBgX, qrBgY + qrBgR);
+      ctx.quadraticCurveTo(qrBgX, qrBgY, qrBgX + qrBgR, qrBgY);
+      ctx.closePath();
+      ctx.fill();
 
-      // "cash2pay.shop"
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = '500 15px Inter, sans-serif';
-      ctx.fillText('cash2pay.shop', W / 2, 252);
+      // Generate and draw QR code
+      const qrPadding = 50;
+      const qrSize = qrBgSize - qrPadding * 2;
+      const qrX = qrBgX + qrPadding;
+      const qrY = qrBgY + qrPadding;
 
-      // Divider
-      const divGrad = ctx.createLinearGradient(100, 0, W - 100, 0);
-      divGrad.addColorStop(0, 'transparent');
-      divGrad.addColorStop(0.5, 'rgba(247, 147, 26, 0.2)');
-      divGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = divGrad;
-      ctx.fillRect(80, 285, W - 160, 1);
-
-      // "PAY WITH BITCOIN"
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = '600 13px Inter, sans-serif';
-      ctx.letterSpacing = '2px';
-      ctx.fillText('PAY  WITH  BITCOIN', W / 2, 325);
-
-      // Description
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.font = '400 16px Inter, sans-serif';
-      ctx.fillText('Scan the QR code or tap the link', W / 2, 360);
-      ctx.fillText('to send a secure Bitcoin payment.', W / 2, 385);
-
-      // QR Code
-      const qrSize = 260;
-      const qrX = (W - qrSize) / 2;
-      const qrY = 420;
-
-      // QR background
-      const qrPad = 16;
-      ctx.fillStyle = '#ffffff';
-      roundRectFill(ctx, qrX - qrPad, qrY - qrPad, qrSize + qrPad * 2, qrSize + qrPad * 2, 16);
-
-      // Generate QR
       try {
         const qrCanvas = document.createElement('canvas');
         await QRCode.toCanvas(qrCanvas, PAYMENT_URL, {
           width: qrSize,
           margin: 0,
-          color: { dark: '#1a1a2e', light: '#ffffff' }
+          color: { dark: '#000000', light: '#ffffff' },
+          errorCorrectionLevel: 'H'
         });
         ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
       } catch (e) {
-        console.error('QR generation failed:', e);
+        console.error('QR error:', e);
       }
 
-      // Small ₿ overlay on QR center
-      const overlayR = 22;
+      // Bitcoin icon in center of QR (orange circle with ₿)
+      const centerX = W / 2;
+      const centerY = qrBgY + qrBgSize / 2;
+      const iconR = 38;
+
+      // White circle behind (for QR clearance)
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(W / 2, qrY + qrSize / 2, overlayR + 4, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, iconR + 10, 0, Math.PI * 2);
       ctx.fill();
 
-      const miniGrad = ctx.createLinearGradient(W/2 - overlayR, qrY + qrSize/2 - overlayR, W/2 + overlayR, qrY + qrSize/2 + overlayR);
-      miniGrad.addColorStop(0, '#F7931A');
-      miniGrad.addColorStop(1, '#E8850F');
-      ctx.fillStyle = miniGrad;
+      // Orange rounded square (like CashApp style)
+      const sqSize = iconR * 2;
+      const sqX = centerX - iconR;
+      const sqY = centerY - iconR;
+      const sqR = 14;
+
+      const iconGrad = ctx.createLinearGradient(sqX, sqY, sqX + sqSize, sqY + sqSize);
+      iconGrad.addColorStop(0, '#F7931A');
+      iconGrad.addColorStop(1, '#E8850F');
+      ctx.fillStyle = iconGrad;
+
       ctx.beginPath();
-      ctx.arc(W / 2, qrY + qrSize / 2, overlayR, 0, Math.PI * 2);
+      ctx.moveTo(sqX + sqR, sqY);
+      ctx.lineTo(sqX + sqSize - sqR, sqY);
+      ctx.quadraticCurveTo(sqX + sqSize, sqY, sqX + sqSize, sqY + sqR);
+      ctx.lineTo(sqX + sqSize, sqY + sqSize - sqR);
+      ctx.quadraticCurveTo(sqX + sqSize, sqY + sqSize, sqX + sqSize - sqR, sqY + sqSize);
+      ctx.lineTo(sqX + sqR, sqY + sqSize);
+      ctx.quadraticCurveTo(sqX, sqY + sqSize, sqX, sqY + sqSize - sqR);
+      ctx.lineTo(sqX, sqY + sqR);
+      ctx.quadraticCurveTo(sqX, sqY, sqX + sqR, sqY);
+      ctx.closePath();
       ctx.fill();
 
+      // ₿ symbol
       ctx.fillStyle = '#ffffff';
-      ctx.font = '800 22px Inter, sans-serif';
-      ctx.fillText('₿', W / 2, qrY + qrSize / 2 + 2);
+      ctx.font = '800 42px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('₿', centerX, centerY + 2);
 
-      // URL below QR
-      const urlY = qrY + qrSize + qrPad + 40;
-      ctx.fillStyle = '#F7931A';
-      ctx.font = '600 17px Inter, sans-serif';
-      ctx.fillText('cash2pay.shop/$Payment', W / 2, urlY);
-
-      // Pay Now button
-      const btnW = 320, btnH = 56;
-      const btnX = (W - btnW) / 2;
-      const btnY = urlY + 35;
-
-      const btnGrad = ctx.createLinearGradient(btnX, btnY, btnX + btnW, btnY + btnH);
-      btnGrad.addColorStop(0, '#F7931A');
-      btnGrad.addColorStop(1, '#E8850F');
-      ctx.fillStyle = btnGrad;
-      roundRectFill(ctx, btnX, btnY, btnW, btnH, 14);
-
-      // Button shadow
-      ctx.shadowColor = 'rgba(247, 147, 26, 0.3)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetY = 4;
-      ctx.fillStyle = btnGrad;
-      roundRectFill(ctx, btnX, btnY, btnW, btnH, 14);
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 18px Inter, sans-serif';
-      ctx.fillText('Pay Now  →', W / 2, btnY + btnH / 2 + 1);
-
-      // Trust badges
-      const badgeY = btnY + btnH + 50;
+      // Bottom text
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.font = '500 12px Inter, sans-serif';
-      ctx.fillText('🔒 Secure   ·   ⚡ Instant   ·   ✓ Verified', W / 2, badgeY);
+      ctx.font = '500 16px Inter, sans-serif';
+      ctx.fillText('Scan to pay with Bitcoin', W / 2, qrBgY + qrBgSize + 60);
 
-      // Powered by
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.font = '400 11px Inter, sans-serif';
-      ctx.fillText('Powered by Bitcoin Network', W / 2, badgeY + 30);
-    }
-
-    function roundRectFill(ctx, x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function roundRect(ctx, x, y, w, h, radii) {
-      ctx.beginPath();
-      ctx.moveTo(x + radii.tl, y);
-      ctx.lineTo(x + w - radii.tr, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + radii.tr);
-      ctx.lineTo(x + w, y + h - radii.br);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - radii.br, y + h);
-      ctx.lineTo(x + radii.bl, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - radii.bl);
-      ctx.lineTo(x, y + radii.tl);
-      ctx.quadraticCurveTo(x, y, x + radii.tl, y);
-      ctx.closePath();
-      ctx.fill();
+      // Bottom bar
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillRect((W - 60) / 2, H - 50, 60, 4);
     }
 
     function downloadCard() {
       const canvas = document.getElementById('card');
       const link = document.createElement('a');
-      link.download = 'payment-card.png';
+      link.download = 'cashpay-payment-card.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
     }
 
-    // Draw on load
     document.fonts.ready.then(() => drawCard());
   </script>
 </body>
