@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Download Payment Card</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -76,6 +76,8 @@
       const qrBgX = (W - qrBgSize) / 2;
       const qrBgY = 220;
       const qrBgR = 32;
+      const centerX = W / 2;
+      const centerY = qrBgY + qrBgSize / 2;
 
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
@@ -97,22 +99,36 @@
       const qrX = qrBgX + qrPadding;
       const qrY = qrBgY + qrPadding;
 
+      if (typeof QRCode === 'undefined') {
+        console.error('QR error: QRCode library is not loaded.');
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 24px Inter, sans-serif';
+        ctx.fillText('QR Code Library Error', W / 2, centerY);
+        return;
+      }
+
       try {
-        const qrCanvas = document.createElement('canvas');
-        await QRCode.toCanvas(qrCanvas, PAYMENT_URL, {
+        const qrDataUrl = await QRCode.toDataURL(PAYMENT_URL, {
           width: qrSize,
           margin: 0,
           color: { dark: '#000000', light: '#ffffff' },
           errorCorrectionLevel: 'H'
         });
-        ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+        const img = new Image();
+        img.src = qrDataUrl;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
       } catch (e) {
         console.error('QR error:', e);
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 24px Inter, sans-serif';
+        ctx.fillText('QR Code Generation Failed', W / 2, centerY);
       }
 
       // Bitcoin icon in center of QR (orange circle with ₿)
-      const centerX = W / 2;
-      const centerY = qrBgY + qrBgSize / 2;
       const iconR = 38;
 
       // White circle behind (for QR clearance)
