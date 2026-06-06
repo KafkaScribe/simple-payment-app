@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -12,10 +12,10 @@ function PayPageContent() {
   const amount = searchParams.get('amount');
 
   const [btcAddress, setBtcAddress] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [note, setNote] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes
+  const [showQR, setShowQR] = useState(false);
+  const [walletAttempted, setWalletAttempted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const timerRef = useRef(null);
 
   // Redirect if no amount
   useEffect(() => {
@@ -24,10 +24,8 @@ function PayPageContent() {
     }
   }, [amount, router]);
 
-  // Fetch BTC address from config
+  // Fetch BTC address
   useEffect(() => {
-    // We'll get the BTC address from the invoice creation response
-    // For now, use a default that the API will also use
     setBtcAddress(process.env.NEXT_PUBLIC_BTC_ADDRESS || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa');
   }, []);
 
@@ -51,49 +49,36 @@ function PayPageContent() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(btcAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = btcAddress;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [btcAddress]);
+  const bitcoinUri = btcAddress ? `bitcoin:${btcAddress}` : '';
 
-  const handleConfirmPayment = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amountUsd: parseFloat(amount),
-          payerNote: note || undefined,
-        }),
-      });
-      const invoice = await res.json();
-      if (res.ok) {
-        router.push(`/confirmed?id=${invoice.id}&amount=${amount}`);
-      } else {
-        alert('Failed to create invoice. Please try again.');
-        setLoading(false);
+  const handleOpenWallet = () => {
+    setWalletAttempted(true);
+
+    // Try to open the bitcoin: URI
+    window.location.href = bitcoinUri;
+
+    // After 2.5 seconds, if the page is still visible (no app opened),
+    // show the QR code as fallback
+    timerRef.current = setTimeout(() => {
+      if (!document.hidden) {
+        setShowQR(true);
       }
-    } catch {
-      alert('Network error. Please try again.');
-      setLoading(false);
-    }
+    }, 2500);
   };
 
-  const bitcoinUri = btcAddress;
+  // If page becomes hidden (wallet app opened), clear the fallback timer
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden && timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   if (!amount) return null;
 
@@ -136,25 +121,68 @@ function PayPageContent() {
                   </div>
                 </div>
 
-                {/* QR Code Section */}
                 <div className="qr-section">
+                  {/* Amount Display */}
                   <div className="qr-amount-display">${parseFloat(amount).toFixed(2)}</div>
-                  <div className="qr-amount-label">Scan to pay with Bitcoin</div>
 
-                  <div className="qr-wrapper">
-                    <QRCodeSVG
-                      value={bitcoinUri}
-                      size={200}
-                      level="M"
-                      bgColor="white"
-                      fgColor="#1A1A2E"
-                      style={{ display: 'block' }}
-                    />
-                    <div className="qr-overlay-icon">₿</div>
-                  </div>
+                  {!showQR ? (
+                    <>
+                      {/* Open Wallet Button */}
+                      <div className="qr-amount-label">
+                        {walletAttempted
+                          ? 'Opening your wallet app...'
+                          : 'Tap below to pay with your wallet app'}
+                      </div>
 
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem', padding: '2rem 0' }}>
+                        <button
+                          type="button"
+                          onClick={handleOpenWallet}
+                          className="submit-btn submit-btn-orange"
+                          style={{ width: '100%', maxWidth: '320px' }}
+                          disabled={!btcAddress}
+                        >
+                          <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '22px', height: '22px' }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+                          </svg>
+                          Open Wallet &amp; Pay
+                        </button>
 
+                        <button
+                          type="button"
+                          onClick={() => setShowQR(true)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(255,255,255,0.45)',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          Show QR Code instead
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* QR Code Fallback */}
+                      <div className="qr-amount-label">Scan to pay</div>
 
+                      <div className="qr-wrapper">
+                        <QRCodeSVG
+                          value={bitcoinUri}
+                          size={200}
+                          level="M"
+                          bgColor="white"
+                          fgColor="#1A1A2E"
+                          style={{ display: 'block' }}
+                        />
+                        <div className="qr-overlay-icon">₿</div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Timer */}
                   <div className="qr-timer">
@@ -162,18 +190,6 @@ function PayPageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     Payment window: {formatTime(timeLeft)}
-                  </div>
-
-                  {/* Note */}
-                  <div className="note-section">
-                    <input
-                      type="text"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Add a note (optional)"
-                      className="note-input"
-                      maxLength={200}
-                    />
                   </div>
                 </div>
               </div>
@@ -203,7 +219,6 @@ function PayPageContent() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-
           <button
             type="button"
             onClick={() => router.push('/')}
@@ -228,3 +243,4 @@ export default function PayPage() {
     </Suspense>
   );
 }
+
