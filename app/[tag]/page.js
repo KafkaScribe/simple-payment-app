@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
 const QUICK_AMOUNTS = [10, 15, 20, 25];
 const MORE_AMOUNTS = [50, 75, 100, 150, 200];
 const MIN_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MIN_AMOUNT || '10');
 const MAX_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MAX_AMOUNT || '2000');
+const BTC_ADDRESS = process.env.NEXT_PUBLIC_BTC_ADDRESS || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
 
 export default function TagPage() {
   const router = useRouter();
   const params = useParams();
+  const fallbackTimer = useRef(null);
 
   // Extract tag from URL: "$@Payment" -> "Payment"
   const rawTag = decodeURIComponent(params.tag || '');
@@ -49,8 +51,31 @@ export default function TagPage() {
       setError(`Maximum amount is $${MAX_AMOUNT.toLocaleString()}`);
       return;
     }
-    router.push(`/pay?amount=${numAmount}`);
+
+    // Try to open wallet app via bitcoin: URI
+    window.location.href = `bitcoin:${BTC_ADDRESS}`;
+
+    // If wallet doesn't open after 2.5s, fallback to QR code page
+    fallbackTimer.current = setTimeout(() => {
+      if (!document.hidden) {
+        router.push(`/pay?amount=${numAmount}`);
+      }
+    }, 2500);
   };
+
+  // If page becomes hidden (wallet opened), cancel fallback
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden && fallbackTimer.current) {
+        clearTimeout(fallbackTimer.current);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    };
+  }, []);
 
   const tagInitial = displayName.charAt(0).toUpperCase();
 
