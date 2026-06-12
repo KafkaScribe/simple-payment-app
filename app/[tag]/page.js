@@ -129,7 +129,7 @@ export default function TagPage() {
         <h1 className="profile-tag">{displayName}</h1>
         <p className="profile-notice">
           Pay securely with Bitcoin.
-          <strong>Tap Pay now below to pay.</strong>
+          <strong>Enter an amount, then continue.</strong>
         </p>
       </div>
 

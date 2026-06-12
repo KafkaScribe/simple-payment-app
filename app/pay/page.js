@@ -13,6 +13,7 @@ function PayPageContent() {
 
   const [btcAddress, setBtcAddress] = useState('');
   const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [copied, setCopied] = useState(false);
 
   // Redirect if no amount
   useEffect(() => {
@@ -47,6 +48,29 @@ function PayPageContent() {
   };
 
   const bitcoinUri = btcAddress ? `bitcoin:${btcAddress}` : '';
+
+  const handleCopy = async () => {
+    if (!btcAddress) return;
+    try {
+      await navigator.clipboard.writeText(btcAddress);
+    } catch {
+      // Fallback for browsers without the async clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = btcAddress;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleOpenWallet = () => {
+    if (bitcoinUri) window.location.href = bitcoinUri;
+  };
 
   if (!amount) return null;
 
@@ -92,9 +116,7 @@ function PayPageContent() {
                 <div className="qr-section">
                   {/* Amount Display */}
                   <div className="qr-amount-display">${parseFloat(amount).toFixed(2)}</div>
-
-
-                  <div className="qr-amount-label">Scan to pay</div>
+                  <div className="qr-amount-label">Scan with your wallet, or copy the address below</div>
 
                   <div className="qr-wrapper">
                     <QRCodeSVG
@@ -114,6 +136,36 @@ function PayPageContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     Payment window: {formatTime(timeLeft)}
+                  </div>
+
+                  {/* Bitcoin address with copy */}
+                  <div className="btc-address-section">
+                    <div className="btc-address-label">Bitcoin address</div>
+                    <div className="btc-address-box">
+                      <span className="btc-address-text">{btcAddress}</span>
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        className={`copy-btn${copied ? ' copied' : ''}`}
+                        aria-label="Copy Bitcoin address"
+                      >
+                        {copied ? (
+                          <>
+                            <svg fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                            </svg>
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                            </svg>
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -143,6 +195,16 @@ function PayPageContent() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={handleOpenWallet}
+            className="submit-btn submit-btn-orange"
+          >
+            Open in wallet app
+            <svg fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
+          </button>
           <button
             type="button"
             onClick={() => router.push('/')}
