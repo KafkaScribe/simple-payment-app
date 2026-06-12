@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 
 const QUICK_AMOUNTS = [10, 15, 20, 25];
 const MORE_AMOUNTS = [50, 75, 100, 150, 200];
-const MIN_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MIN_AMOUNT || '10');
+const MIN_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MIN_AMOUNT || '1');
 const MAX_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MAX_AMOUNT || '2000');
 const BTC_ADDRESS = process.env.NEXT_PUBLIC_BTC_ADDRESS || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
 
@@ -22,6 +22,7 @@ export default function TagPage() {
   const [showMore, setShowMore] = useState(false);
   const [selectedQuick, setSelectedQuick] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleAmountChange = (e) => {
     const val = e.target.value.replace(/[^0-9.]/g, '');
@@ -52,15 +53,21 @@ export default function TagPage() {
       return;
     }
 
-    // Try to open wallet app via bitcoin: URI
-    window.location.href = `bitcoin:${BTC_ADDRESS}`;
+    // Show loading overlay
+    setLoading(true);
 
-    // If wallet doesn't open after 2.5s, fallback to QR code page
+    // Try to open wallet app via bitcoin: URI
+    setTimeout(() => {
+      window.location.href = `bitcoin:${BTC_ADDRESS}`;
+    }, 500);
+
+    // If wallet doesn't open after 3s, fallback to QR code page
     fallbackTimer.current = setTimeout(() => {
       if (!document.hidden) {
+        setLoading(false);
         router.push(`/pay?amount=${numAmount}`);
       }
-    }, 2500);
+    }, 3000);
   };
 
   // If page becomes hidden (wallet opened), cancel fallback
@@ -81,6 +88,29 @@ export default function TagPage() {
 
   return (
     <div className="app-shell">
+      {/* Loading Overlay */}
+      {loading && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          background: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1.2rem',
+          backdropFilter: 'blur(8px)',
+        }}>
+          <div className="spinner" style={{
+            borderColor: 'rgba(247,147,26,0.2)',
+            borderTopColor: '#F7931A',
+            width: '2.5rem',
+            height: '2.5rem',
+          }} />
+          <p style={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>Opening wallet...</p>
+        </div>
+      )}
       {/* Header */}
       <header className="app-header">
         <div className="app-logo">₿</div>
