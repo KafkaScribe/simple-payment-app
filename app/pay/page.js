@@ -11,34 +11,63 @@ function PayPageContent() {
   const searchParams = useSearchParams();
   const amount = searchParams.get('amount');
 
-  const [btcAddress, setBtcAddress] = useState('');
+  const [invoice, setInvoice] = useState('');
+  const [sats, setSats] = useState(null);
+  const [status, setStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
+  const [errorMsg, setErrorMsg] = useState('');
   const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Redirect if no amount
   useEffect(() => {
-    if (!amount) {
-      router.push('/');
-    }
+    if (!amount) router.push('/');
   }, [amount, router]);
 
-  // Fetch BTC address
+  // Generate a Lightning invoice for this amount
   useEffect(() => {
-    setBtcAddress(process.env.NEXT_PUBLIC_BTC_ADDRESS || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa');
-  }, []);
+    if (!amount) return;
+    let cancelled = false;
+
+    const generate = async () => {
+      setStatus('loading');
+      try {
+        const res = await fetch('/api/lightning', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amountUsd: parseFloat(amount) }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setErrorMsg(data.error || 'Could not create the payment.');
+          setStatus('error');
+          return;
+        }
+        setInvoice(data.invoice);
+        setSats(data.sats);
+        setStatus('ready');
+      } catch {
+        if (!cancelled) {
+          setErrorMsg('Network error. Please try again.');
+          setStatus('error');
+        }
+      }
+    };
+
+    generate();
+    return () => {
+      cancelled = true;
+    };
+  }, [amount, reloadKey]);
 
   // Countdown timer
   useEffect(() => {
+    if (status !== 'ready') return;
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft((prev) => (prev <= 0 ? (clearInterval(timer), 0) : prev - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [status]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -46,14 +75,10 @@ function PayPageContent() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const bitcoinUri = btcAddress ? `bitcoin:${btcAddress}` : '';
-
-  const handleOpenWallet = () => {
-    if (bitcoinUri) window.location.href = bitcoinUri;
-  };
-
   if (!amount) return null;
 
+  const lightningUri = invoice ? `lightning:${invoice}` : '';
+  const cashAppUrl = invoice ? `https://cash.app/launch/lightning/${invoice}` : '';
   const tagInitial = CASHTAG.replace('@', '').charAt(0).toUpperCase();
 
   return (
@@ -96,27 +121,50 @@ function PayPageContent() {
                 <div className="qr-section">
                   {/* Amount Display */}
                   <div className="qr-amount-display">${parseFloat(amount).toFixed(2)}</div>
-                  <div className="qr-amount-label">Scan to pay</div>
+                  {sats != null && (
+                    <div className="qr-amount-label">
+                      ≈ {sats.toLocaleString()} sats over Lightning
+                    </div>
+                  )}
 
-                  <div className="qr-wrapper">
-                    <QRCodeSVG
-                      value={bitcoinUri}
-                      size={200}
-                      level="M"
-                      bgColor="white"
-                      fgColor="#1A1A2E"
-                      style={{ display: 'block' }}
-                    />
-                    <div className="qr-overlay-icon">₿</div>
-                  </div>
+                  {status === 'loading' && (
+                    <div style={{ padding: '2.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <div className="spinner" style={{ borderColor: 'rgba(247,147,26,0.2)', borderTopColor: '#F7931A', width: '2.25rem', height: '2.25rem' }} />
+                      <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ink-secondary)' }}>
+                        Generating secure invoice…
+                      </p>
+                    </div>
+                  )}
 
-                  {/* Timer */}
-                  <div className="qr-timer">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                    Payment window: {formatTime(timeLeft)}
-                  </div>
+                  {status === 'error' && (
+                    <div style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+                      <p className="amount-error" style={{ marginBottom: '1rem' }}>{errorMsg}</p>
+                    </div>
+                  )}
+
+                  {status === 'ready' && (
+                    <>
+                      <div className="qr-wrapper">
+                        <QRCodeSVG
+                          value={lightningUri}
+                          size={200}
+                          level="M"
+                          bgColor="white"
+                          fgColor="#1A1A2E"
+                          style={{ display: 'block' }}
+                        />
+                        <div className="qr-overlay-icon">₿</div>
+                      </div>
+
+                      {/* Timer */}
+                      <div className="qr-timer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Invoice expires in {formatTime(timeLeft)}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -145,16 +193,23 @@ function PayPageContent() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button
-            type="button"
-            onClick={handleOpenWallet}
-            className="submit-btn submit-btn-orange"
-          >
-            Open in wallet app
-            <svg fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-            </svg>
-          </button>
+          {status === 'ready' && (
+            <a href={cashAppUrl} className="submit-btn submit-btn-orange" style={{ textDecoration: 'none' }}>
+              Open in Cash App
+              <svg fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </a>
+          )}
+          {status === 'error' && (
+            <button
+              type="button"
+              onClick={() => { setTimeLeft(15 * 60); setReloadKey((k) => k + 1); }}
+              className="submit-btn submit-btn-orange"
+            >
+              Try again
+            </button>
+          )}
           <button
             type="button"
             onClick={() => router.push('/')}
@@ -179,4 +234,3 @@ export default function PayPage() {
     </Suspense>
   );
 }
-

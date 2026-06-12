@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
 const QUICK_AMOUNTS = [10, 15, 20, 25];
 const MORE_AMOUNTS = [50, 75, 100, 150, 200];
 const MIN_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MIN_AMOUNT || '1');
 const MAX_AMOUNT = parseInt(process.env.NEXT_PUBLIC_MAX_AMOUNT || '2000');
-const BTC_ADDRESS = process.env.NEXT_PUBLIC_BTC_ADDRESS || '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
 
 export default function TagPage() {
   const router = useRouter();
   const params = useParams();
-  const fallbackTimer = useRef(null);
 
   // Extract tag from URL: "$@Payment" -> "Payment"
   const rawTag = decodeURIComponent(params.tag || '');
@@ -53,37 +51,11 @@ export default function TagPage() {
       return;
     }
 
-    // Show loading overlay
+    // Show loading overlay, then move to the payment page where the
+    // Lightning invoice is generated and the wallet/Cash App link is offered.
     setLoading(true);
-
-    // Try to open wallet app via bitcoin: URI.
-    // Must fire synchronously in the tap handler — browsers block custom-scheme
-    // navigation that isn't tied to a direct user gesture.
-    // Note: no amount param — the bitcoin: URI expects BTC, but we only have USD.
-    window.location.href = `bitcoin:${BTC_ADDRESS}`;
-
-    // If wallet doesn't open after 2.5s, fallback to QR code page
-    fallbackTimer.current = setTimeout(() => {
-      if (!document.hidden) {
-        setLoading(false);
-        router.push(`/pay?amount=${numAmount}`);
-      }
-    }, 2500);
+    router.push(`/pay?amount=${numAmount}`);
   };
-
-  // If page becomes hidden (wallet opened), cancel fallback
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden && fallbackTimer.current) {
-        clearTimeout(fallbackTimer.current);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
-    };
-  }, []);
 
   const tagInitial = displayName.charAt(0).toUpperCase();
 
@@ -109,7 +81,7 @@ export default function TagPage() {
             width: '2.5rem',
             height: '2.5rem',
           }} />
-          <p style={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>Opening wallet...</p>
+          <p style={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>Preparing payment...</p>
         </div>
       )}
       {/* Header */}
