@@ -56,18 +56,19 @@ export default function TagPage() {
     // Show loading overlay
     setLoading(true);
 
-    // Try to open wallet app via bitcoin: URI
-    setTimeout(() => {
-      window.location.href = `bitcoin:${BTC_ADDRESS}`;
-    }, 500);
+    // Try to open wallet app via bitcoin: URI.
+    // Must fire synchronously in the tap handler — browsers block custom-scheme
+    // navigation that isn't tied to a direct user gesture.
+    // Note: no amount param — the bitcoin: URI expects BTC, but we only have USD.
+    window.location.href = `bitcoin:${BTC_ADDRESS}`;
 
-    // If wallet doesn't open after 3s, fallback to QR code page
+    // If wallet doesn't open after 2.5s, fallback to QR code page
     fallbackTimer.current = setTimeout(() => {
       if (!document.hidden) {
         setLoading(false);
         router.push(`/pay?amount=${numAmount}`);
       }
-    }, 3000);
+    }, 2500);
   };
 
   // If page becomes hidden (wallet opened), cancel fallback
